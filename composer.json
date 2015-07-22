@@ -1,0 +1,19 @@
+{
+  "name": "jesseschalken/autoload-generator",
+  "description": "Generates PHP project include/autoload files",
+  "minimum-stability": "dev",
+  "license": "LGPL-2.1",
+  "authors": [
+    {
+      "name": "Jesse Schalken",
+      "email": "me@jesseschalken.com"
+    }
+  ],
+  "require": {
+    "nikic/php-parser": "dev-master",
+    "docopt/docopt": "1.0.0"
+  },
+  "bin": [
+    "generate.php"
+  ]
+}
