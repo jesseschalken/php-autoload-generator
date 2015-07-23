@@ -67,7 +67,15 @@ class Generator {
      * @param string $path
      */
     function addFile($path) {
-        $nodes = $this->parser->parse(file_get_contents($path));
+        $contents = file_get_contents($path);
+
+        // Remove the hash-bang line if there, since
+        // PhpParser doesn't support it
+        if (substr($contents, 0, 2) === '#!') {
+            $contents = substr($contents, strpos($contents, "\n") + 1);
+        }
+
+        $nodes = $this->parser->parse($contents);
 
         foreach ($nodes as $node) {
             $this->processNode($path, $node);
