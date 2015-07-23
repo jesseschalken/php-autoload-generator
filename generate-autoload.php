@@ -276,7 +276,7 @@ s
     );
     $method = $args['--require-method'];
     $outFile = $args['<outfile>'];
-    $files = parse_files_input($args['<files>'] ?: dirname($outFile));
+    $files = parse_files_input($args['<files>'] ?: [dirname($outFile)]);
     $exclude = parse_files_input($args['--exclude']);
     $prepend = $args['--prepend'];
     $caseInsensitive = $args['--case-insensitive'];
