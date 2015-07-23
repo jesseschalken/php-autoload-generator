@@ -264,7 +264,7 @@ function parse_files_input(array $inFiles) {
 function main() {
     $args = \Docopt::handle(<<<s
 Usage:
-  generate-autoload.php [options] <outfile> <files>... [--exclude <file>]...
+  generate-autoload.php [options] <outfile> [<files>...] [--exclude <file>]...
 
 Options:
   --require-method=<method>  One of "include", "require", "include_once" or "require_once" [default: require_once]
@@ -276,7 +276,7 @@ s
     );
     $method = $args['--require-method'];
     $outFile = $args['<outfile>'];
-    $files = parse_files_input($args['<files>']);
+    $files = parse_files_input($args['<files>'] ?: dirname($outFile));
     $exclude = parse_files_input($args['--exclude']);
     $prepend = $args['--prepend'];
     $caseInsensitive = $args['--case-insensitive'];
