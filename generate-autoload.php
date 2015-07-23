@@ -101,7 +101,7 @@ class Generator {
                 $this->require[$file] = true;
             }
         } else if ($node instanceof \PhpParser\Node\Stmt\ClassLike) {
-            $this->map[strtolower($prefix . $node->name)][] = $file;
+            $this->map[$prefix . $node->name][] = $file;
         }
 
         if ($node instanceof \PhpParser\Node\Stmt\Namespace_) {
@@ -136,13 +136,24 @@ class Generator {
     }
 
     /**
+     * @param string $method
      * @param string $base
      * @param bool $prepend
+     * @param bool $caseInsensitive
      * @return string
      */
-    private function generateClassAutoload($base, $prepend = false) {
+    private function generateClassAutoload($method, $base, $prepend = false, $caseInsensitive) {
+        if ($caseInsensitive) {
+            $map2 = [];
+            foreach ($this->map as $class => $files)
+                foreach ($files as $file)
+                    $map2[strtolower($class)][] = $file;
+        } else {
+            $map2 = $this->map;
+        }
+
         $map = [];
-        foreach ($this->map as $class => $files) {
+        foreach ($map2 as $class => $files) {
             $set = [];
             foreach ($files as $file) {
                 $file = make_relative($file, $base);
@@ -166,19 +177,15 @@ class Generator {
         $map = var_export($map, true);
         $prepend = var_export($prepend, true);
 
+        $lowered = $caseInsensitive ? 'strtolower($class)' : '$class';
         return <<<s
 spl_autoload_register(function (\$class) {
     static \$map = $map;
 
-    \$file =& \$map[strtolower(\$class)];
+    \$file =& \$map[$lowered];
 
-    if (\$file === null) {
-        return;
-    } else if (is_string(\$file)) {
-        require_once __DIR__ . "/\$file";
-    } else if (is_array(\$file)) {
-        foreach (\$file as \$f)
-            require_once __DIR__ . "/\$f";
+    if (is_string(\$file)) {
+        $method __DIR__ . "/\$file";
     }
 }, true, $prepend);
 
@@ -186,10 +193,11 @@ s;
     }
 
     /**
+     * @param string $method
      * @param string $base
      * @return string
      */
-    private function generateRequiredFiles($base) {
+    private function generateRequiredFiles($method, $base) {
         $php = '';
         $require = array_keys($this->require);
         $require = array_unique($require);
@@ -202,7 +210,7 @@ s;
         foreach ($require as $file) {
             $file = str_replace(DIRECTORY_SEPARATOR, '/', $file);
             $file = var_export("/$file", true);
-            $php .= "require_once __DIR__ . $file;\n";
+            $php .= "$method __DIR__ . $file;\n";
         }
 
         return $php;
@@ -211,11 +219,13 @@ s;
     /**
      * @param string $base
      * @param bool $prepend
+     * @param string $method
+     * @param bool $caseInsensitive
      * @return string
      */
-    function generate($base, $prepend = false) {
-        $autoload = $this->generateClassAutoload($base, $prepend);
-        $required = $this->generateRequiredFiles($base);
+    function generate($base, $prepend = false, $method, $caseInsensitive) {
+        $autoload = $this->generateClassAutoload($method, $base, $prepend, $caseInsensitive);
+        $required = $this->generateRequiredFiles($method, $base);
 
         return <<<s
 <?php
@@ -229,16 +239,11 @@ s;
     }
 }
 
-function main() {
-    $args = \Docopt::handle(<<<s
-Usage:
-  generate-autoload.php <out file> <php file>...
-s
-    );
-
-    $outFile = $args['<out file>'];
-    $inFiles = $args['<php file>'];
-
+/**
+ * @param string[] $inFiles
+ * @return string[]
+ */
+function parse_files_input(array $inFiles) {
     $files = [];
     foreach ($inFiles as $file) {
         $files2 = recursive_scan($file);
@@ -253,6 +258,35 @@ s
         }
     }
 
+    return $files;
+}
+
+function main() {
+    $args = \Docopt::handle(<<<s
+Usage:
+  generate-autoload.php [options] <outfile> <files>... [--exclude <file>]...
+
+Options:
+  --require-method=<method>  One of "include", "require", "include_once" or "require_once" [default: require_once]
+  --case-insensitive         Autoload classes case insensitively. Will involve a strtolower() call every time a class is loaded
+  --prepend                  Third parameter to spl_autoload_register()
+  --exclude <file>           Exclude a file/directory
+
+s
+    );
+    $method = $args['--require-method'];
+    $outFile = $args['<outfile>'];
+    $files = parse_files_input($args['<files>']);
+    $exclude = parse_files_input($args['--exclude']);
+    $prepend = $args['--prepend'];
+    $caseInsensitive = $args['--case-insensitive'];
+
+    $exclude = array_fill_keys(array_map('realpath', $exclude), true);
+
+    foreach ($files as $k => $file)
+        if (isset($exclude[realpath($file)]))
+            unset($files[$k]);
+
     $generator = new Generator;
 
     foreach ($files as $file) {
@@ -261,7 +295,7 @@ s
     }
     print "\n";
 
-    file_put_contents($outFile, $generator->generate(dirname($outFile)));
+    file_put_contents($outFile, $generator->generate(dirname($outFile), $prepend, $method, $caseInsensitive));
     print "Output written to $outFile\n";
 }
 
