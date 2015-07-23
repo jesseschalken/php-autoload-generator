@@ -265,4 +265,7 @@ s
     print "Output written to $outFile\n";
 }
 
+ini_set('memory_limit', '-1');
+ini_set('xdebug.max_nesting_level', '10000');
+
 main();
