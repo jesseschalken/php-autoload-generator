@@ -12,8 +12,8 @@ require_once __DIR__ . '/vendor/autoload.php';
  * @return string
  */
 function make_relative($path, $base) {
-    $path = array_diff(explode(DIRECTORY_SEPARATOR, realpath($path)), ['']);
-    $base = array_diff(explode(DIRECTORY_SEPARATOR, realpath($base)), ['']);
+    $path = array_values(array_diff(explode(DIRECTORY_SEPARATOR, realpath($path)), ['']));
+    $base = array_values(array_diff(explode(DIRECTORY_SEPARATOR, realpath($base)), ['']));
 
     $i = 0;
     while (
