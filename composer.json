@@ -1,6 +1,6 @@
 {
   "name": "jesseschalken/autoload-generator",
-  "description": "Generates PHP project include/autoload files",
+  "description": "Generates classmap-based include/autoload files for PHP projects, with support for functions and constants.",
   "minimum-stability": "dev",
   "license": "LGPL-2.1",
   "authors": [
