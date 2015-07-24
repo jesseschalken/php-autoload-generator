@@ -11,7 +11,7 @@
   ],
   "require": {
     "nikic/php-parser": "dev-master",
-    "docopt/docopt": "1.0.0"
+    "docopt/docopt": "^1.0.0"
   },
   "bin": [
     "generate.php"
