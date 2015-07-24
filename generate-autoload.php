@@ -60,7 +60,7 @@ class Generator {
     private $parser;
 
     function __construct() {
-        $this->parser = new \PhpParser\Parser\Php5(new \PhpParser\Lexer);
+        $this->parser = new \PhpParser\Parser(new \PhpParser\Lexer);
     }
 
     /**

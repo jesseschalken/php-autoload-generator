@@ -10,8 +10,8 @@
     }
   ],
   "require": {
-    "nikic/php-parser": "dev-master",
-    "docopt/docopt": "^1.0.0"
+    "nikic/php-parser": "^1.4",
+    "docopt/docopt": "^1.0"
   },
   "bin": [
     "generate-autoload.php"
