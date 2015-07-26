@@ -3,10 +3,10 @@
 
 namespace AutoloadGenerator;
 
-if (file_exists(__DIR__ . '/vendor/autoload.php'))
-    require_once __DIR__ . '/vendor/autoload.php';
+if (file_exists(__DIR__ . '/../vendor/autoload.php'))
+    require_once __DIR__ . '/../vendor/autoload.php';
 else
-    require_once __DIR__ . '/../../autoload.php';
+    require_once __DIR__ . '/../../../autoload.php';
 
 /**
  * Returns $path relative to $base
@@ -59,7 +59,7 @@ class Generator {
     private $map = [];
     /** @var true[] */
     private $require = [];
-    /** @var \PhpParser\Parser\Php5 */
+    /** @var \PhpParser\Parser */
     private $parser;
 
     function __construct() {
@@ -267,7 +267,7 @@ function parse_files_input(array $inFiles) {
 function main() {
     $args = \Docopt::handle(<<<s
 Usage:
-  generate-autoload.php [options] <outfile> [<files>...] [--exclude <file>]...
+  generate-autoload [options] <outfile> [<files>...] [--exclude <file>]...
 
 Options:
   --require-method=<method>  One of "include", "require", "include_once" or "require_once" [default: require_once]
