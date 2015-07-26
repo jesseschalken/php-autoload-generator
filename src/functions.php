@@ -30,13 +30,13 @@ function make_relative($path, $base) {
  * @return \Generator
  */
 function recursive_scan($path, $followLinks = false) {
+    yield $path;
+
     if (is_dir($path) && ($followLinks || !is_link($path))) {
         foreach (array_diff(scandir($path), ['.', '..']) as $p) {
             foreach (recursive_scan($path . DIRECTORY_SEPARATOR . $p, $followLinks) as $p2)
                 yield $p2;
         }
-    } else {
-        yield $path;
     }
 }
 

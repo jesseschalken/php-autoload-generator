@@ -8,7 +8,7 @@ namespace AutoloadGenerator;
  */
 function flatten_input_paths(array $paths) {
     foreach ($paths as $path) {
-        foreach (recursive_scan($path) as $file) {
+        foreach (recursive_scan(realpath($path)) as $file) {
             if (pathinfo($file, PATHINFO_EXTENSION) === 'php') {
                 yield $file;
             }

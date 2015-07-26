@@ -131,7 +131,7 @@ s;
 
         $php .= <<<s
     if (isset(\$map[\$class]))
-        $options->requireMethod __DIR__ . "/\$map[\$class]";
+        $options->requireMethod __DIR__ . "/{\$map[\$class]}";
 }, true, $prepend);
 
 s;
