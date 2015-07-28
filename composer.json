@@ -1,6 +1,6 @@
 {
   "name": "jesseschalken/autoload-generator",
-  "description": "Generates PHP project include/autoload files",
+  "description": "Generates classmap-based include/autoload files for PHP projects, with support for functions and constants.",
   "minimum-stability": "dev",
   "license": "LGPL-2.1",
   "authors": [
@@ -10,10 +10,10 @@
     }
   ],
   "require": {
-    "nikic/php-parser": "dev-master",
-    "docopt/docopt": "1.0.0"
+    "nikic/php-parser": "^1.4",
+    "docopt/docopt": "^1.0"
   },
   "bin": [
-    "generate-autoload.php"
+    "bin/generate-autoload"
   ]
 }
