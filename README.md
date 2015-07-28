@@ -65,7 +65,3 @@ require_once __DIR__ . '/constants.php';
 require_once __DIR__ . '/functions.php';
 
 ```
-
-In other words, it can tell what files can be included lazily through the class map and which ones must be
-included eagerly due to having global function and constant definitions. After including the generated file,
-you are guaranteed to have access to everything defined in your project. 
