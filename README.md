@@ -6,7 +6,7 @@ Generates class-map based autoloaders for PHP projects, with support for functio
 
 1. Include the composer package:
     ```
-    php composer.phar require jesseschalken/autoload-generator:dev-master
+    php composer.phar require jesseschalken/autoload-generator
     ```
 
 2. Run `./vendor/bin/generate-autoload <outfile> [<files>...]`
