@@ -190,11 +190,12 @@ final class RealFileScanner extends FileScanner {
 
 final class CachingFileScanner extends FileScanner {
     /**
-     * @param string      $baseDir
+     * @param string      $cachePath
      * @param FileScanner $scanner
+     * @return CachingFileScanner
      */
-    public static function create($baseDir, FileScanner $scanner) {
-        $self = new self($baseDir, $scanner);
+    public static function create($cachePath, FileScanner $scanner) {
+        $self = new self($cachePath, $scanner);
         $self->read();
         return $self;
     }
@@ -204,15 +205,15 @@ final class CachingFileScanner extends FileScanner {
     /** @var array[] */
     private $files = array();
     /** @var string */
-    private $jsonPath;
+    private $cachePath;
 
     /**
-     * @param string      $baseDir
+     * @param string      $cachePath
      * @param FileScanner $scanner
      */
-    private function __construct($baseDir, FileScanner $scanner) {
+    private function __construct($cachePath, FileScanner $scanner) {
         $this->scanner = $scanner;
-        $this->jsonPath = $baseDir . '/php-autoload-generator-cache.json';
+        $this->cachePath = $cachePath;
     }
 
     public function finish() {
@@ -242,18 +243,19 @@ final class CachingFileScanner extends FileScanner {
     }
 
     private function read() {
-        if (\file_exists($this->jsonPath)) {
-            print "Reading cache from $this->jsonPath\n";
-            $json = JSON::decode(\file_get_contents($this->jsonPath), true);
+        if (\file_exists($this->cachePath)) {
+            print "Reading cache from $this->cachePath\n";
+            $json = JSON::decode(\file_get_contents($this->cachePath), true);
             $this->files = $json['files'];
         } else {
-            print "Cache at $this->jsonPath not found, starting empty\n";
+            print "Cache not found at $this->cachePath\n";
+            print "Starting with empty cache\n";
         }
     }
 
     private function write() {
-        print "Writing cache to $this->jsonPath\n";
-        \file_put_contents($this->jsonPath, JSON::encode(array('files' => $this->files), true, true));
+        print "Writing cache to $this->cachePath\n";
+        \file_put_contents($this->cachePath, JSON::encode(array('files' => $this->files), true, true));
     }
 }
 
@@ -306,7 +308,8 @@ Options:
     --exclude <file>           Exclude a file/directory.
     --follow-symlinks          Follow symbolic links.
     --hack                     Emit a Hack file (in partial mode) instead of a PHP file.
-    --no-cache                 Don't read or write a cache file next to the destination file.
+    --no-cache                 Don't read or write a cache file.
+    --cache-path=<path>        Path to a cache file. Defaults to '.php-autoload-generator-cache.json' next to output file.
 
 s;
 
@@ -321,14 +324,19 @@ s;
         $self->caseInsensitive = $args['--case-insensitive'];
         $self->useHack = $args['--hack'];
         $self->noCache = $args['--no-cache'];
+        if (isset($args['--cache-path'])) {
+            $self->cachePath = $args['--cache-path'];
+        }
 
         $files = $self->flattenInputPaths($args['<files>'] ?: array($self->baseDir));
+        // Remove excluded files
         $files = \array_diff($files, $self->flattenInputPaths($args['--exclude']));
+        // Ignore the output file
         $files = \array_diff($files, array(\realpath($self->outFile)));
 
         $scanner = new RealFileScanner();
         if (!$self->noCache) {
-            $scanner = CachingFileScanner::create($self->baseDir, $scanner);
+            $scanner = CachingFileScanner::create($self->cachePath, $scanner);
         }
         foreach ($files as $file) {
             $parsed = $scanner->scanFile($file);
@@ -366,10 +374,13 @@ s;
     private $useHack = false;
     /** @var bool */
     private $noCache = false;
+    /** @var string */
+    private $cachePath;
 
     private function __construct($outFile) {
         $this->outFile = $outFile;
         $this->baseDir = \dirname($outFile);
+        $this->cachePath = $this->baseDir . '/.php-autoload-generator-cache.json';
     }
 
     private function generate() {
