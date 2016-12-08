@@ -5,6 +5,7 @@ namespace JesseSchalken\AutoloadGenerator;
 use PhpParser\Lexer;
 use PhpParser\Node;
 use PhpParser\Parser;
+use PureJSON\JSON;
 
 /**
  * Returns $path relative to $base
@@ -62,7 +63,22 @@ function compile_hack($hack) {
     return run_command(\escapeshellarg(__DIR__ . '/h2tp-stdin'), $hack);
 }
 
-final class ParsedFile {
+abstract class ParsedFile {
+    /** @return string[] */
+    public abstract function getClasses();
+
+    /** @return string[] */
+    public abstract function getFunctions();
+
+    /** @return string[] */
+    public abstract function getConstants();
+}
+
+final class RealParsedFile extends ParsedFile {
+    /**
+     * @param string $code
+     * @return RealParsedFile
+     */
     public static function parse($code) {
         // Remove the hash-bang line if there, since PhpParser doesn't support it
         if (\substr($code, 0, 2) === '#!') {
@@ -84,8 +100,10 @@ final class ParsedFile {
 
     /** @var string[] */
     private $classes = array();
-    /** @var bool */
-    private $loadEagerly = false;
+    /** @var string[] */
+    private $constants = array();
+    /** @var string[] */
+    private $functions = array();
 
     /**
      * @param Node   $node
@@ -93,16 +111,23 @@ final class ParsedFile {
      */
     private function processNode(Node $node, $prefix) {
         if ($node instanceof Node\Stmt\Const_ && $node->consts) {
-            $this->loadEagerly = true;
+            foreach ($node->consts as $const) {
+                $this->constants[] = $prefix . $const->name;
+            }
         } else if ($node instanceof Node\Stmt\Function_) {
-            $this->loadEagerly = true;
+            $this->functions[] = $prefix . $node->name;
         } else if ($node instanceof Node\Expr\FuncCall) {
             // Try to catch constants defined with define()
             if (
                 $node->name instanceof Node\Name &&
-                $node->name->parts === array('define')
+                $node->name->parts === array('define') &&
+                $node->args
             ) {
-                $this->loadEagerly = true;
+                $arg = $node->args[0]->value;
+                if ($arg instanceof Node\Scalar\String_) {
+                    // Constants defined with define() don't use the current namespace
+                    $this->constants[] = $arg->value;
+                }
             }
         } else if ($node instanceof Node\Stmt\ClassLike) {
             $this->classes[] = $prefix . $node->name;
@@ -136,8 +161,120 @@ final class ParsedFile {
         return $this->classes;
     }
 
-    public function getLoadEagerly() {
-        return $this->loadEagerly;
+    public function getFunctions() {
+        return $this->functions;
+    }
+
+    public function getConstants() {
+        return $this->constants;
+    }
+}
+
+abstract class FileScanner {
+    /**
+     * @param string $path
+     * @return ParsedFile
+     */
+    public abstract function scanFile($path);
+
+    public function finish() {
+    }
+}
+
+final class RealFileScanner extends FileScanner {
+    public function scanFile($path) {
+        print "Scanning $path\n";
+        return RealParsedFile::parse(\file_get_contents($path));
+    }
+}
+
+final class CachingFileScanner extends FileScanner {
+    /**
+     * @param string      $baseDir
+     * @param FileScanner $scanner
+     */
+    public static function create($baseDir, FileScanner $scanner) {
+        $self = new self($baseDir, $scanner);
+        $self->read();
+        return $self;
+    }
+
+    /** @var FileScanner */
+    private $scanner;
+    /** @var array[] */
+    private $files = array();
+    /** @var string */
+    private $jsonPath;
+
+    /**
+     * @param string      $baseDir
+     * @param FileScanner $scanner
+     */
+    private function __construct($baseDir, FileScanner $scanner) {
+        $this->scanner = $scanner;
+        $this->jsonPath = $baseDir . '/php-autoload-generator-cache.json';
+    }
+
+    public function finish() {
+        $this->write();
+    }
+
+    public function scanFile($path) {
+        $fileSize = \filesize($path);
+        $lastModified = \filemtime($path);
+
+        if (
+            isset($this->files[$path]) &&
+            $this->files[$path]['fileSize'] == $fileSize &&
+            $this->files[$path]['lastModified'] >= $lastModified
+        ) {
+            return new CachedFile($this->files[$path]);
+        }
+
+        $file = $this->scanner->scanFile($path);;
+        return new CachedFile($this->files[$path] = array(
+            'fileSize'     => $fileSize,
+            'lastModified' => $lastModified,
+            'classes'      => $file->getClasses(),
+            'functions'    => $file->getFunctions(),
+            'constants'    => $file->getConstants(),
+        ));
+    }
+
+    private function read() {
+        if (\file_exists($this->jsonPath)) {
+            print "Reading cache from $this->jsonPath\n";
+            $json = JSON::decode(\file_get_contents($this->jsonPath), true);
+            $this->files = $json['files'];
+        } else {
+            print "Cache at $this->jsonPath not found, starting empty\n";
+        }
+    }
+
+    private function write() {
+        print "Writing cache to $this->jsonPath\n";
+        \file_put_contents($this->jsonPath, JSON::encode(array('files' => $this->files), true, true));
+    }
+}
+
+final class CachedFile extends ParsedFile {
+    /** @var array */
+    private $array;
+
+    public function __construct(array $array) {
+        $this->array = $array;
+    }
+
+    public function getClasses() {
+        return $this->array['classes'];
+    }
+
+    public function getFunctions() {
+        return $this->array['functions'];
+    }
+
+    public function getConstants() {
+        return $this->array['constants'];
     }
 }
 
@@ -169,6 +306,7 @@ Options:
     --exclude <file>           Exclude a file/directory.
     --follow-symlinks          Follow symbolic links.
     --hack                     Emit a Hack file (in partial mode) instead of a PHP file.
+    --no-cache                 Don't read or write a cache file next to the destination file.
 
 s;
 
@@ -182,23 +320,28 @@ s;
         $self->prependAutoload = $args['--prepend'];
         $self->caseInsensitive = $args['--case-insensitive'];
         $self->useHack = $args['--hack'];
+        $self->noCache = $args['--no-cache'];
 
         $files = $self->flattenInputPaths($args['<files>'] ?: array($self->baseDir));
         $files = \array_diff($files, $self->flattenInputPaths($args['--exclude']));
+        $files = \array_diff($files, array(\realpath($self->outFile)));
 
+        $scanner = new RealFileScanner();
+        if (!$self->noCache) {
+            $scanner = CachingFileScanner::create($self->baseDir, $scanner);
+        }
         foreach ($files as $file) {
-            $parsed = ParsedFile::parse(\file_get_contents($file));
-            if ($parsed->getLoadEagerly()) {
+            $parsed = $scanner->scanFile($file);
+            if ($parsed->getConstants() || $parsed->getFunctions()) {
                 $self->eagerFiles[] = $file;
             }
             foreach ($parsed->getClasses() as $class) {
                 $self->classMap[$class] = $file;
             }
-            print "Scanning $file\n";
         }
-        print "\n";
+        $scanner->finish();
+        print "Writing autoloader to $self->outFile\n";
         \file_put_contents($self->outFile, $self->generate());
-        print "Output written to $self->outFile\n";
     }
 
     /** @var string */
@@ -221,6 +364,8 @@ s;
     private $requireMethod = 'require_once';
     /** @var bool */
     private $useHack = false;
+    /** @var bool */
+    private $noCache = false;
 
     private function __construct($outFile) {
         $this->outFile = $outFile;
