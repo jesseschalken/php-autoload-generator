@@ -49,7 +49,7 @@ After running
 <?php
 
 spl_autoload_register(function ($class) {
-    static $map = array (
+  static $map = array (
   'Project\\Foo' => 'Foo.php',
   'Project\\Bar' => 'Bar.php',
   'Project\\Class1' => 'lots of classes.php',
@@ -57,8 +57,9 @@ spl_autoload_register(function ($class) {
   'Project\\Class3' => 'lots of classes.php',
 );
 
-    if (isset($map[$class]))
-        require_once __DIR__ . "/{$map[$class]}";
+  if (isset($map[$class])) {
+    require_once __DIR__ . "/{$map[$class]}";
+  }
 }, true, false);
 
 require_once __DIR__ . '/constants.php';
