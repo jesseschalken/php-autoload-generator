@@ -71,8 +71,9 @@ class Generator {
                 $prefix2 = '';
             }
 
-            foreach ($node->stmts as $node2)
+            foreach ($node->stmts as $node2) {
                 $this->processNode($file, $node2, $prefix . $prefix2);
+            }
         } else {
             // Cheating a little. I really just want to traverse the tree
             // recursively without needing to write code specifically for
@@ -104,8 +105,9 @@ class Generator {
             $file = make_relative($file, $base);
             $file = str_replace(DIRECTORY_SEPARATOR, '/', $file);
 
-            if ($options->caseInsensitive)
+            if ($options->caseInsensitive) {
                 $class = strtolower($class);
+            }
 
             $map[$class] = $file;
         }
@@ -130,8 +132,9 @@ s;
         $prepend = var_export($options->prependAutoload, true);
 
         $php .= <<<s
-    if (isset(\$map[\$class]))
+    if (isset(\$map[\$class])) {
         $options->requireMethod __DIR__ . "/{\$map[\$class]}";
+    }
 }, true, $prepend);
 
 s;
@@ -183,5 +186,118 @@ $required
 
 s;
     }
+}
+
+/**
+ * Returns $path relative to $base
+ * @param string $path
+ * @param string $base
+ * @return string
+ */
+function make_relative($path, $base) {
+    $path  = explode(DIRECTORY_SEPARATOR, realpath($path));
+    $base  = explode(DIRECTORY_SEPARATOR, realpath($base));
+    $count = min(count($path), count($base));
+
+    for ($i = 0; $i < $count && $path[$i] === $base[$i]; $i++) {
+    }
+
+    $path = array_slice($path, $i);
+    $base = array_slice($base, $i);
+
+    $path = array_merge(array_fill(0, count($base), '..'), $path);
+
+    return implode(DIRECTORY_SEPARATOR, $path);
+}
+
+/**
+ * @param string $path
+ * @param bool   $followLinks
+ * @return string[]
+ */
+function recursive_scan($path, $followLinks = false) {
+    $result = array($path);
+
+    if (is_dir($path) && ($followLinks || !is_link($path))) {
+        foreach (array_diff(scandir($path), array('.', '..')) as $p) {
+            foreach (recursive_scan($path . DIRECTORY_SEPARATOR . $p, $followLinks) as $p2) {
+                $result[] = $p2;
+            }
+        }
+    }
+
+    return $result;
+}
+
+/**
+ * @param string[] $paths
+ * @return string[]
+ */
+function flatten_input_paths(array $paths) {
+    $result = array();
+    foreach ($paths as $path) {
+        foreach (recursive_scan(realpath($path)) as $file) {
+            $extension = pathinfo($file, PATHINFO_EXTENSION);
+            if ($extension === 'php' || $extension === 'hh') {
+                $result[] = $file;
+            }
+        }
+    }
+    return $result;
+}
+
+const DOC = <<<'s'
+A PHP class autoload generator with support for functions and constants.
+
+Example:
+
+    php-generate-autoload src/autoload.php
+
+        Will write an autoloader for everything in "src/" to "src/autoload.php".
+
+    php-generate-autoload autoload.php src --exclude src/Bar lib/functions.php
+
+        Will write to an autoloader for everything in "src/" and
+        "lib/functions.php", except for everything in "src/Bar", to "autoload.php".
+
+Usage:
+    php-generate-autoload [options] <outfile> [<files>...] [--exclude <file>]...
+    php-generate-autoload -h|--help
+
+Options:
+    --require-method=<method>  One of "include", "require", "include_once" or
+                               "require_once". [default: require_once]
+    --case-insensitive         Autoload classes case insensitively. Will involve
+                               a strtolower() call every time a class is loaded.
+    --prepend                  Third parameter to spl_autoload_register().
+    --exclude <file>           Exclude a file/directory.
+
+s;
+
+function main(array $argv) {
+    $args = \Docopt::handle(DOC, array('argv' => \array_slice($argv, 1)));
+
+    $outFile = $args['<outfile>'];
+    $files   = array_diff(
+        flatten_input_paths($args['<files>'] ?: array(dirname($outFile))),
+        flatten_input_paths($args['--exclude'])
+    );
+
+    $options                  = new GeneratorOptions;
+    $options->requireMethod   = $args['--require-method'];
+    $options->prependAutoload = $args['--prepend'];
+    $options->caseInsensitive = $args['--case-insensitive'];
+    $options->generatedBy     = join(' ', $argv);
+
+    $generator = new Generator;
+
+    foreach ($files as $file) {
+        print "Scanning $file\n";
+        $generator->addFile($file);
+    }
+    print "\n";
+
+    file_put_contents($outFile, $generator->generate(dirname($outFile), $options));
+    print "Output written to $outFile\n";
 }
 
