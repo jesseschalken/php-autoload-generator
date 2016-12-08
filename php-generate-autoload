@@ -12,5 +12,5 @@ ini_set('xdebug.max_nesting_level', '10000');
 
 require_once __DIR__ . '/main.php';
 
-\AutoloadGenerator\main($_SERVER['argv']);
+JesseSchalken\AutoloadGenerator\Generator::main($_SERVER['argv']);
 
