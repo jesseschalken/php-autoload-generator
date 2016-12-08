@@ -4,16 +4,19 @@ namespace AutoloadGenerator;
 
 /**
  * @param string[] $paths
- * @return \Generator
+ * @return string[]
  */
 function flatten_input_paths(array $paths) {
+    $result = array();
     foreach ($paths as $path) {
         foreach (recursive_scan(realpath($path)) as $file) {
-            if (pathinfo($file, PATHINFO_EXTENSION) === 'php') {
-                yield $file;
+            $extension = pathinfo($file, PATHINFO_EXTENSION);
+            if ($extension === 'php' || $extension === 'hh') {
+                $result[] = $file;
             }
         }
     }
+    return $result;
 }
 
 function main() {
@@ -48,8 +51,8 @@ s
 
     $outFile = $args['<outfile>'];
     $files   = array_diff(
-        iterator_to_array(flatten_input_paths($args['<files>'] ?: [dirname($outFile)])),
-        iterator_to_array(flatten_input_paths($args['--exclude']))
+        flatten_input_paths($args['<files>'] ?: array(dirname($outFile))),
+        flatten_input_paths($args['--exclude'])
     );
 
     global $argv;

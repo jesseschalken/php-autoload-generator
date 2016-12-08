@@ -27,16 +27,19 @@ function make_relative($path, $base) {
 /**
  * @param string $path
  * @param bool   $followLinks
- * @return \Generator
+ * @return string[]
  */
 function recursive_scan($path, $followLinks = false) {
-    yield $path;
+    $result = array($path);
 
     if (is_dir($path) && ($followLinks || !is_link($path))) {
-        foreach (array_diff(scandir($path), ['.', '..']) as $p) {
-            foreach (recursive_scan($path . DIRECTORY_SEPARATOR . $p, $followLinks) as $p2)
-                yield $p2;
+        foreach (array_diff(scandir($path), array('.', '..')) as $p) {
+            foreach (recursive_scan($path . DIRECTORY_SEPARATOR . $p, $followLinks) as $p2) {
+                $result[] = $p2;
+            }
         }
     }
+
+    return $result;
 }
 

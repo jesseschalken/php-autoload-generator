@@ -11,9 +11,9 @@ class GeneratorOptions {
 
 class Generator {
     /** @var string[] */
-    private $map = [];
+    private $map = array();
     /** @var true[] */
-    private $require = [];
+    private $require = array();
     /** @var \PhpParser\Parser */
     private $parser;
 
@@ -54,7 +54,7 @@ class Generator {
             // Try to catch constants defined with define()
             if (
                 $node->name instanceof \PhpParser\Node\Name &&
-                $node->name->parts === ['define']
+                $node->name->parts === array('define')
             ) {
                 $this->require[$file] = true;
             }
@@ -99,7 +99,7 @@ class Generator {
      * @return string
      */
     private function generateClassAutoload($base, GeneratorOptions $options) {
-        $map = [];
+        $map = array();
         foreach ($this->map as $class => $file) {
             $file = make_relative($file, $base);
             $file = str_replace(DIRECTORY_SEPARATOR, '/', $file);
