@@ -28,11 +28,50 @@ function make_relative($path, $base) {
     return \implode(\DIRECTORY_SEPARATOR, $path);
 }
 
+/**
+ * @param string $command
+ * @param string $input
+ * @return string
+ * @throws \Exception
+ */
+function run_command($command, $input = '') {
+    $process = \proc_open($command, array(
+        0 => array('pipe', 'r'),
+        1 => array('pipe', 'w'),
+        2 => array('pipe', 'w'),
+    ), $pipes);
+
+    \fwrite($pipes[0], $input);
+    \fclose($pipes[0]);
+
+    $stdout = \stream_get_contents($pipes[1]);
+    $stderr = \stream_get_contents($pipes[2]);
+    \fclose($pipes[1]);
+    \fclose($pipes[2]);
+
+    $exitCode = \proc_close($process);
+
+    if ($exitCode !== 0) {
+        throw new \Exception("Command '$command' returned exit code $exitCode\n\n$stderr");
+    }
+
+    return $stdout;
+}
+
+function compile_hack($hack) {
+    return run_command(\escapeshellarg(__DIR__ . '/h2tp-stdin'), $hack);
+}
+
 final class ParsedFile {
     public static function parse($code) {
         // Remove the hash-bang line if there, since PhpParser doesn't support it
         if (\substr($code, 0, 2) === '#!') {
             $code = \substr($code, strpos($code, "\n") + 1);
+        }
+
+        // Compile Hack to PHP
+        if (\substr($code, 0, 4) === '<?hh') {
+            $code = compile_hack($code);
         }
 
         $parser = new Parser(new Lexer);

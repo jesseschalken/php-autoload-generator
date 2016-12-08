@@ -1,0 +1,17 @@
+#!/bin/bash
+
+set -e
+
+file=$(cat /dev/stdin)
+tmpdir=$(mktemp -d '/tmp/h2tp_XXXXXX')
+
+mkdir "$tmpdir/hack"
+echo "$file" > "$tmpdir/hack/file.php"
+
+h2tp "$tmpdir/hack" "$tmpdir/php" >&2
+
+file=$(cat "$tmpdir/php/file.php")
+rm -r "$tmpdir"
+
+echo "$file"
+
