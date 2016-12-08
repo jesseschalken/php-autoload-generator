@@ -4,20 +4,21 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
         "This file is @generated automatically"
     ],
-    "hash": "f454d36970324e65e57281258b84f9d2",
+    "hash": "b16ac1ecf437e91bec4468824bcecc99",
+    "content-hash": "d4354b2e54f774989e921cc11ba2d519",
     "packages": [
         {
             "name": "docopt/docopt",
-            "version": "1.0.0",
+            "version": "1.0.2",
             "source": {
                 "type": "git",
                 "url": "https://github.com/docopt/docopt.php.git",
-                "reference": "0720e1cd97b291a9be2c2da76440681a1530ae02"
+                "reference": "d2ee65c2fe4be78f945a48edd02be45843b39423"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/docopt/docopt.php/zipball/0720e1cd97b291a9be2c2da76440681a1530ae02",
-                "reference": "0720e1cd97b291a9be2c2da76440681a1530ae02",
+                "url": "https://api.github.com/repos/docopt/docopt.php/zipball/d2ee65c2fe4be78f945a48edd02be45843b39423",
+                "reference": "d2ee65c2fe4be78f945a48edd02be45843b39423",
                 "shasum": ""
             },
             "require": {
@@ -50,7 +51,7 @@
                 "cli",
                 "docs"
             ],
-            "time": "2015-05-17 09:44:21"
+            "time": "2015-10-30 03:21:23"
         },
         {
             "name": "nikic/php-parser",
@@ -58,12 +59,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/nikic/PHP-Parser.git",
-                "reference": "196f177cfefa0f1f7166c0a05d8255889be12418"
+                "reference": "c4bbc8e236a1f21b2b17cfbf3d46aa6ece69b9f7"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/nikic/PHP-Parser/zipball/196f177cfefa0f1f7166c0a05d8255889be12418",
-                "reference": "196f177cfefa0f1f7166c0a05d8255889be12418",
+                "url": "https://api.github.com/repos/nikic/PHP-Parser/zipball/c4bbc8e236a1f21b2b17cfbf3d46aa6ece69b9f7",
+                "reference": "c4bbc8e236a1f21b2b17cfbf3d46aa6ece69b9f7",
                 "shasum": ""
             },
             "require": {
@@ -95,7 +96,7 @@
                 "parser",
                 "php"
             ],
-            "time": "2015-07-14 17:31:05"
+            "time": "2016-01-15 21:03:42"
         }
     ],
     "packages-dev": [],
