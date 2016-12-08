@@ -9,16 +9,16 @@ Generates class-map based autoloaders for PHP projects, with support for functio
     php composer.phar require jesseschalken/autoload-generator
     ```
 
-2. Run `./vendor/bin/generate-autoload <outfile> [<files>...]`
+2. Run `./vendor/bin/php-generate-autoload <outfile> [<files>...]`
 
     For example, if your project has all it's source files in a `src/` directory, you can do:
     ```
-    ./vendor/bin/generate-autoload src/autoload.php
+    ./vendor/bin/php-generate-autoload src/autoload.php
     ```
 
     and then use `src/autoload.php` as the entrypoint for your project.
     
-    See `./vendor/bin/generate-autoload --help` for more info.
+    See `./vendor/bin/php-generate-autoload --help` for more info.
 
 3. Update `composer.json` to point to your autoloader, if applicable. For example:
 
@@ -30,7 +30,7 @@ Generates class-map based autoloaders for PHP projects, with support for functio
 
 ### How it works
 
-`generate-autoload` parses all PHP files using [nikic/PHP-Parser](https://github.com/nikic/PHP-Parser) and
+`php-generate-autoload` parses all PHP files using [nikic/PHP-Parser](https://github.com/nikic/PHP-Parser) and
 creates a map from class names to file paths to be used in an autoloader registered with `spl_autoload_register()`. Any
 files containing global function or constant definitions are included directly.
 
@@ -40,7 +40,7 @@ classes, `src/functions.php` containing functions and `src/constants.php` contai
 After running
 
 ```
-./vendor/bin/generate-autoload src/autoload.php
+./vendor/bin/php-generate-autoload src/autoload.php
 ```
 
 `src/autoload.php` would contain something like:
