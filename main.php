@@ -24,7 +24,9 @@ function make_relative($path, $base) {
     $path = \array_slice($path, $i);
     $base = \array_slice($base, $i);
 
-    $path = \array_merge(\array_fill(0, \count($base), '..'), $path);
+    if ($base) {
+        $path = \array_merge(\array_fill(0, \count($base), '..'), $path);
+    }
 
     return \implode(\DIRECTORY_SEPARATOR, $path);
 }
