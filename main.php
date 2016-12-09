@@ -317,7 +317,7 @@ s;
         $args = \Docopt::handle(self::DOC, array('argv' => \array_slice($argv, 1)));
 
         $self = new self($args['<outfile>']);
-        $self->generatedBy = \join(' ', $argv);
+        $self->generatedBy = \join(' ', \array_map('escapeshellarg', $argv));
         $self->followSymlinks = $args['--follow-symlinks'];
         $self->requireMethod = $args['--require-method'];
         $self->prependAutoload = $args['--prepend'];
